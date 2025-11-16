@@ -23,9 +23,15 @@ def fetch_link(request):
 
     try:
         # ----------------------------------------------------
+        # Convert YouTube Music URLs to standard YouTube URLs
+        # ----------------------------------------------------
+        if "music.youtube.com" in url.lower():
+            url = url.replace("music.youtube.com", "www.youtube.com")
+
+        # ----------------------------------------------------
         # Detect if the request is coming from YouTube Music
         # ----------------------------------------------------
-        is_youtube_music = "music.youtube.com" in url.lower()
+        is_youtube_music = "www.youtube.com" in url.lower() and "music.youtube.com" in request.data.get("url", "").lower()
 
         # ----------------------------------------------------
         # CASE 1: CONVERT TO MP3 AND RETURN DOWNLOAD
@@ -103,7 +109,7 @@ def fetch_link(request):
                 "title": info.get("title"),
                 "thumbnail": info.get("thumbnail"),
                 "uploader": info.get("uploader"),
-                "format_label": "AUTO",  
+                "format_label": "AUTO",
                 "formats": audio_only[:3]
             })
 

@@ -112,7 +112,7 @@ export default function Dashboard() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.25 }}
                   className="absolute right-0 top-16 w-full sm:w-64 bg-gradient-to-b 
-                  from-[#341327ee] to-[#4f3127e8] border border-white rounded-2xl shadow-2xl p-4 text-white z-50"
+                  from-[#341327] to-[#4f3127f3] border border-white rounded-2xl shadow-2xl py-6 px-4 text-white z-50"
                 >
                   <div className="flex flex-col items-center gap-2 border-b border-white pb-3">
                     <FaRegUserCircle className="text-4xl" />
@@ -145,8 +145,8 @@ export default function Dashboard() {
           />
           <button
             onClick={() => fetchLink(false)}
-            className="text-white text-sm bg-gradient-to-b from-[#86697bd2] w-full sm:w-30 h-12
-            to-[#4f3127c9] border border-white px-5 rounded-md"
+            className="text-white text-sm bg-gradient-to-b from-[#341327] w-full sm:w-30 h-12
+            to-[#4f3127e8] border border-white px-5 rounded-md"
           >
             {loading ? "Loading..." : "Fetch"}
           </button>
