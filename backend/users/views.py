@@ -3,7 +3,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
-import json
 
 User = get_user_model()
 
@@ -23,14 +22,11 @@ def get_tokens_for_user(user):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
-    # Ensure request data is parsed as JSON
-    try:
-        data = request.data
-        if isinstance(data, str):
-            data = json.loads(data)
-    except Exception:
-        return Response({'error': 'Invalid JSON.'}, status=400)
-
+    data = request.data  # DRF already parses JSON
+    
+    # Optional: log incoming data for debugging
+    print("Signup payload:", data)
+    
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()
@@ -75,13 +71,11 @@ def signup(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    try:
-        data = request.data
-        if isinstance(data, str):
-            data = json.loads(data)
-    except Exception:
-        return Response({'error': 'Invalid JSON.'}, status=400)
-
+    data = request.data  # DRF already parses JSON
+    
+    # Optional: log incoming data for debugging
+    print("Login payload:", data)
+    
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()
 
