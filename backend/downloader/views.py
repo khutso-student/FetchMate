@@ -40,18 +40,24 @@ def fetch_link(request):
             "no_warnings": True,
         }
 
-        # Playlists support for YT Music
+        # --------------------------
+        # Playlist support
+        # --------------------------
         ydl_opts["noplaylist"] = False if "playlist" in url.lower() else True
 
         # --------------------------
         # Cookies support
         # --------------------------
-        cookies_file = os.environ.get("YTDLP_COOKIES")
-        if cookies_file:
-            ydl_opts["cookiefile"] = cookies_file
+        cookies_content = os.environ.get("YTDLP_COOKIES")
+        cookies_file = None
+        if cookies_content:
+            # Write cookies to a temp file
+            cookies_file = tempfile.NamedTemporaryFile(delete=False)
+            cookies_file.write(cookies_content.encode())
+            cookies_file.flush()
+            ydl_opts["cookiefile"] = cookies_file.name
         else:
             if "youtube.com" in url.lower() or "music.youtube.com" in url.lower():
-                # Only warn if a protected URL is likely
                 return Response({
                     "error": "Protected YouTube content requires cookies. Upload cookies in Render and set YTDLP_COOKIES."
                 }, status=400)
@@ -66,6 +72,9 @@ def fetch_link(request):
                 "preferredquality": "192",
             }]
 
+        # --------------------------
+        # Extract info
+        # --------------------------
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=convert_mp3)
 
@@ -84,6 +93,7 @@ def fetch_link(request):
         # --------------------------
         raw_formats = info.get("formats", []) or []
 
+        # YouTube Music → audio-only
         if is_youtube_music:
             audio_only = [
                 {
