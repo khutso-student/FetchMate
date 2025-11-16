@@ -23,7 +23,7 @@ export default function Login({ model, setModel, switchToSignup }) {
       setModel(false);
       navigate("/direction");
     } catch (err) {
-      console.error(err);
+     console.error(err.response?.data);
       setError(err.response?.data?.error || "Login failed");
     } finally {
       setLoading(false);

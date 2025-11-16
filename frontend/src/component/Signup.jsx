@@ -34,7 +34,7 @@ export default function Signup({ model, setModel, switchToLogin }) {
         navigate("/direction");
       }, 1000);
     } catch (err) {
-      console.error(err);
+       console.error(err.response?.data);
       setError(err.response?.data?.error || "Signup failed");
     } finally {
       setLoading(false);
