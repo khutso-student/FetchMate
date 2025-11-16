@@ -5,7 +5,8 @@ import { Navigate } from "react-router-dom";
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
 
-  return user ? children : <Navigate to="/direction" replace />;
+  // Redirect unauthenticated users to "/" (Home)
+  return user ? children : <Navigate to="/" replace />;
 };
 
 export default ProtectedRoute;

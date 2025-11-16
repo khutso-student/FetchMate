@@ -11,6 +11,8 @@ import { IoIosArrowBack } from "react-icons/io";
 import { FaRegUserCircle } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 
+import api from "../services/api"; // import your Axios instance
+
 export default function Dashboard() {
   const [model, setModel] = useState(false);
   const [url, setUrl] = useState("");
@@ -20,11 +22,10 @@ export default function Dashboard() {
 
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
-  const accessToken = localStorage.getItem("accessToken");
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/direction");
   };
 
   const fetchLink = async (convertMp3 = false) => {
@@ -35,18 +36,18 @@ export default function Dashboard() {
     setSelectedFormat(null);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/downloader/fetch/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ url, convert_mp3: convertMp3 }),
-      });
+      // Axios request with responseType blob to handle file downloads
+      const res = await api.post(
+        "/downloader/fetch/",
+        { url, convert_mp3: convertMp3 },
+        { responseType: "blob" }
+      );
 
-      const contentType = res.headers.get("Content-Type");
-      if (contentType && contentType.includes("audio/mpeg")) {
-        const blob = await res.blob();
+      const contentType = res.headers["content-type"];
+
+      // If backend returns audio directly
+      if (contentType.includes("audio/mpeg")) {
+        const blob = new Blob([res.data], { type: "audio/mpeg" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "audio.mp3";
@@ -56,20 +57,25 @@ export default function Dashboard() {
         return;
       }
 
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Failed to fetch link.");
+      // If backend returns JSON metadata instead of file
+      let data;
+      if (contentType.includes("application/json")) {
+        // Axios with blob requires reading text then parsing
+        const text = await res.data.text?.();
+        data = text ? JSON.parse(text) : null;
+      }
+
+      if (!data) {
+        alert("Failed to fetch link.");
         setLoading(false);
         return;
       }
 
-      const data = await res.json();
       setMeta(data);
-
       if (data.formats.length > 0) setSelectedFormat(data.formats[0]);
     } catch (err) {
       console.error(err);
-      alert("Network error.");
+      alert(err.response?.data?.error || "Network error.");
     }
     setLoading(false);
   };
@@ -139,7 +145,7 @@ export default function Dashboard() {
           />
           <button
             onClick={() => fetchLink(false)}
-            className="text-white text-sm bg-gradient-to-b from-[#341327d2] w-full sm:w-30 h-12
+            className="text-white text-sm bg-gradient-to-b from-[#86697bd2] w-full sm:w-30 h-12
             to-[#4f3127c9] border border-white px-5 rounded-md"
           >
             {loading ? "Loading..." : "Fetch"}
