@@ -26,3 +26,5 @@ sqlparse==0.5.3
 tzdata==2025.2
 whitenoise==6.11.0
 yt-dlp==2025.10.14
+gunicorn==22.1.0
+
