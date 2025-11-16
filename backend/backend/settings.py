@@ -54,20 +54,18 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # empty because React handles frontend
+        'DIRS': [],  # React handles frontend
         'APP_DIRS': True,  # needed for admin templates
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request',  # required for admin
+                'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 ]
-
-
 
 # ============================================
 # URLS / WSGI
@@ -76,7 +74,7 @@ ROOT_URLCONF = 'backend.urls'
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # ============================================
-# DATABASE (SQLite local, PostgreSQL production)
+# DATABASE
 # ============================================
 DATABASES = {
     'default': dj_database_url.config(
@@ -127,13 +125,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 # CORS SETTINGS
 # ============================================
+CORS_ALLOW_CREDENTIALS = True
+
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
-
-CORS_ALLOW_CREDENTIALS = True
+    allowed_origins = config('CORS_ALLOWED_ORIGINS', default='')
+    if allowed_origins:
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins.split(',')]
+    else:
+        CORS_ALLOWED_ORIGINS = []
 
 # ============================================
 # REST FRAMEWORK
