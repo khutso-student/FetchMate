@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+import json
 
 User = get_user_model()
 
@@ -22,22 +23,31 @@ def get_tokens_for_user(user):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
-    username = request.data.get('username')
-    email = request.data.get('email')
-    password = request.data.get('password')
-    role = request.data.get('role', 'user')
+    # Ensure request data is parsed as JSON
+    try:
+        data = request.data
+        if isinstance(data, str):
+            data = json.loads(data)
+    except Exception:
+        return Response({'error': 'Invalid JSON.'}, status=400)
 
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+    role = data.get('role', 'user').strip()
+
+    # Validate required fields
     if not username or not email or not password:
-        return Response({'error': 'All fields are required'}, status=400)
+        return Response({'error': 'All fields are required.'}, status=400)
 
     if len(password) < 8:
-        return Response({'error': 'Password must be at least 8 characters'}, status=400)
+        return Response({'error': 'Password must be at least 8 characters.'}, status=400)
 
     if User.objects.filter(username=username).exists():
-        return Response({'error': 'Username already taken'}, status=400)
+        return Response({'error': 'Username already taken.'}, status=400)
 
     if User.objects.filter(email=email).exists():
-        return Response({'error': 'Email already registered'}, status=400)
+        return Response({'error': 'Email already registered.'}, status=400)
 
     # Create user
     user = User.objects.create_user(
@@ -65,19 +75,26 @@ def signup(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
+    try:
+        data = request.data
+        if isinstance(data, str):
+            data = json.loads(data)
+    except Exception:
+        return Response({'error': 'Invalid JSON.'}, status=400)
+
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
 
     if not email or not password:
-        return Response({'error': 'Both email and password are required'}, status=400)
+        return Response({'error': 'Both email and password are required.'}, status=400)
 
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
-        return Response({'error': 'Invalid credentials'}, status=400)
+        return Response({'error': 'Invalid credentials.'}, status=400)
 
     if not user.check_password(password):
-        return Response({'error': 'Invalid credentials'}, status=400)
+        return Response({'error': 'Invalid credentials.'}, status=400)
 
     tokens = get_tokens_for_user(user)
     return Response({

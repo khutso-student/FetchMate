@@ -40,8 +40,7 @@ export default function Signup({ model, setModel, switchToLogin }) {
         setError(result.error || "Signup failed");
       }
     } catch (err) {
-      // Catch any unexpected errors
-      console.error(err);
+      console.error("Unexpected error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

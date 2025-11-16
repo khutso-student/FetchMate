@@ -16,12 +16,15 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Login using email + password
+  // ======================
+  // LOGIN
+  // ======================
   const login = async (email, password) => {
     try {
       const response = await loginUser({ email, password });
       const { user, tokens } = response.data;
 
+      // Store user and tokens in localStorage
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("accessToken", tokens.access);
       localStorage.setItem("refreshToken", tokens.refresh);
@@ -30,20 +33,25 @@ export const AuthProvider = ({ children }) => {
       return { success: true, data: response.data };
     } catch (err) {
       console.error("Login error:", err);
+
       const message =
         err.response?.data?.error ||
         err.response?.data?.message ||
         "Login failed";
+
       return { success: false, error: message };
     }
   };
 
-  // Signup
+  // ======================
+  // SIGNUP
+  // ======================
   const signup = async (username, email, password) => {
     try {
       const response = await signupUser({ username, email, password });
       const { user, tokens } = response.data;
 
+      // Store user and tokens in localStorage
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("accessToken", tokens.access);
       localStorage.setItem("refreshToken", tokens.refresh);
@@ -52,15 +60,19 @@ export const AuthProvider = ({ children }) => {
       return { success: true, data: response.data };
     } catch (err) {
       console.error("Signup error:", err);
+
       const message =
         err.response?.data?.error ||
         err.response?.data?.message ||
         "Signup failed";
+
       return { success: false, error: message };
     }
   };
 
-  // Logout
+  // ======================
+  // LOGOUT
+  // ======================
   const logout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
