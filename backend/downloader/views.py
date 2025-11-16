@@ -42,7 +42,8 @@ def fetch_link(request):
             "no_warnings": True,
         }
 
-        ydl_opts["noplaylist"] = False  # allow playlists
+        # Allow playlists
+        ydl_opts["noplaylist"] = False
 
         # --------------------------
         # Cookies support
@@ -114,6 +115,7 @@ def fetch_link(request):
 
         raw_formats = info.get("formats", []) or []
 
+        # YouTube Music → audio-only
         if is_youtube_music:
             audio_only = [
                 {
@@ -134,6 +136,7 @@ def fetch_link(request):
                 "formats": audio_only[:3]
             })
 
+        # Normal video + audio
         audio_candidates = [
             {
                 "url": f.get("url"),
