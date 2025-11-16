@@ -1,10 +1,18 @@
 // src/context/AuthContext.js
-import React, { createContext } from "react";
-import api from "../api/api"; // your axios instance
+import React, { createContext, useState, useEffect } from "react";
+import api from "../services/api";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+
+  // Load user on refresh
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) setUser(JSON.parse(savedUser));
+  }, []);
+
   // Signup
   const signup = async (username, email, password) => {
     try {
@@ -13,38 +21,44 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-      
-      // Save tokens and user to localStorage
+
+      // Save tokens
       const { access, refresh } = response.data.tokens;
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
+
+      // Save user
       localStorage.setItem("user", JSON.stringify(response.data.user));
+      setUser(response.data.user);
 
       return { success: true, data: response.data };
     } catch (error) {
-      console.error("Signup error:", error.response?.data || error.message);
-      return { success: false, error: error.response?.data?.error || "Signup failed" };
+      return {
+        success: false,
+        error: error.response?.data?.error || "Signup failed",
+      };
     }
   };
 
   // Login
   const login = async (email, password) => {
     try {
-      const response = await api.post("/users/login/", {
-        email,
-        password,
-      });
+      const response = await api.post("/users/login/", { email, password });
 
-      // Save tokens and user to localStorage
       const { access, refresh } = response.data.tokens;
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
 
-      return { success: true, data: response.data };
+      // Save user
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      setUser(response.data.user);
+
+      return { success: true };
     } catch (error) {
-      console.error("Login error:", error.response?.data || error.message);
-      return { success: false, error: error.response?.data?.error || "Login failed" };
+      return {
+        success: false,
+        error: error.response?.data?.error || "Login failed",
+      };
     }
   };
 
@@ -52,10 +66,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ signup, login, logout }}>
+    <AuthContext.Provider value={{ user, signup, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

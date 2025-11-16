@@ -38,7 +38,7 @@ INSTALLED_APPS = [
 # MIDDLEWARE
 # ============================================
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',   # Must be first
+    'corsheaders.middleware.CorsMiddleware',   # MUST BE FIRST
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,8 +54,8 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # React handles frontend
-        'APP_DIRS': True,  # needed for admin templates
+        'DIRS': [],  
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -123,13 +123,43 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ============================================
-# CORS SETTINGS
+# CORS SETTINGS — FINAL FIX
 # ============================================
 CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",                   # LOCAL FRONTEND (VITE)
+    "https://fetch-mate-dusky.vercel.app",    # DEPLOYED FRONTEND
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "accept",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+]
+
+# ============================================
+# CSRF — REQUIRED FOR LOGIN/SIGNUP TO WORK
+# ============================================
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
     "https://fetch-mate-dusky.vercel.app",
 ]
-CORS_ALLOW_CREDENTIALS = True
 
 # ============================================
 # REST FRAMEWORK

@@ -1,6 +1,10 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import Logo from '../assets/Logo.svg';
+
+import { AiOutlineMail } from "react-icons/ai";
+import { CiLock } from "react-icons/ci";
 
 export default function Login({ model, setModel, switchToSignup }) {
   const { login } = useContext(AuthContext);
@@ -19,12 +23,20 @@ export default function Login({ model, setModel, switchToSignup }) {
       const result = await login(email, password);
 
       if (result.success) {
+        // reset inputs
         setEmail("");
         setPassword("");
+
+        // close modal FIRST
         setModel(false);
-        navigate("/direction");
+
+        // ⭐ force slight async delay to prevent modal UI blocking navigation
+        setTimeout(() => {
+          navigate("/direction", { replace: true });
+        }, 150);
+
       } else {
-        setError(result.error);
+        setError(result.error || "Login failed");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -33,11 +45,13 @@ export default function Login({ model, setModel, switchToSignup }) {
       setLoading(false);
     }
   };
+
   return (
     <div>
       <button
         onClick={() => setModel(!model)}
-        className="text-white text-sm bg-gradient-to-b from-[#341327] to-[#4F3127] border border-white px-3 sm:px-7 py-2 rounded-md cursor-pointer duration-300"
+        className="text-white text-sm bg-gradient-to-b from-[#341327] to-[#4F3127] 
+        border border-white px-3 sm:px-7 py-2 rounded-md cursor-pointer duration-300"
       >
         Login
       </button>
@@ -49,7 +63,8 @@ export default function Login({ model, setModel, switchToSignup }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col justify-center items-center w-[95%] sm:w-100 h-auto gap-5 bg-gradient-to-b from-[#341327] to-[#4F3127] border border-white rounded-xl p-4"
+            className="flex flex-col justify-center items-center w-[95%] sm:w-100 h-auto gap-5 
+            bg-gradient-to-b from-[#341327] to-[#4F3127] border border-white rounded-xl p-4"
           >
             <div className="flex justify-between items-center w-full h-12">
               <img src={Logo} alt="Logo" className="w-35" />
@@ -89,7 +104,9 @@ export default function Login({ model, setModel, switchToSignup }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-9 bg-gradient-to-r from-[#341327] to-[#4F3127] border text-white hover:text-[#8d647d] border-white hover:border-[#311f19] rounded-md cursor-pointer"
+                className="w-full h-9 bg-gradient-to-r from-[#341327] to-[#4F3127] 
+                border text-white hover:text-[#8d647d] border-white hover:border-[#311f19] 
+                rounded-md cursor-pointer"
               >
                 {loading ? "Logging in..." : "Login"}
               </button>
