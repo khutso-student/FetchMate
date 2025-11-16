@@ -125,17 +125,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 # CORS SETTINGS
 # ============================================
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "https://fetch-mate-dusky.vercel.app",
+]
 CORS_ALLOW_CREDENTIALS = True
-
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    CORS_ALLOW_ALL_ORIGINS = False
-    allowed_origins = config('CORS_ALLOWED_ORIGINS', default='')
-    if allowed_origins:
-        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins.split(',')]
-    else:
-        CORS_ALLOWED_ORIGINS = []
 
 # ============================================
 # REST FRAMEWORK
