@@ -19,12 +19,17 @@ export default function Login({ model, setModel, switchToSignup }) {
     setError("");
 
     try {
-      await login(email, password);
-      setModel(false);
-      navigate("/direction");
+      const result = await login(email, password);
+
+      if (result.success) {
+        setModel(false);
+        navigate("/direction");
+      } else {
+        setError(result.error || "Login failed");
+      }
     } catch (err) {
-     console.error(err.response?.data);
-      setError(err.response?.data?.error || "Login failed");
+      console.error(err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -34,7 +39,7 @@ export default function Login({ model, setModel, switchToSignup }) {
     <div>
       <button
         onClick={() => setModel(!model)}
-        className="text-white text-sm bg-gradient-to-b from-[#341327] to-[#4F3127] border border-[#fff] px-3 sm:px-7 py-2 rounded-md cursor-pointer duration-300"
+        className="text-white text-sm bg-gradient-to-b from-[#341327] to-[#4F3127] border border-white px-3 sm:px-7 py-2 rounded-md cursor-pointer duration-300"
       >
         Login
       </button>

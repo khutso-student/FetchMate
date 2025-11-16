@@ -23,19 +23,26 @@ export default function Signup({ model, setModel, switchToLogin }) {
     setSuccess("");
 
     try {
-      await signup(username, email, password);
-      setSuccess("Signup successful! Redirecting...");
-      setUsername("");
-      setEmail("");
-      setPassword("");
+      const result = await signup(username, email, password);
 
-      setTimeout(() => {
-        setModel(false);
-        navigate("/direction");
-      }, 1000);
+      if (result.success) {
+        setSuccess("Signup successful! Redirecting...");
+        setUsername("");
+        setEmail("");
+        setPassword("");
+
+        setTimeout(() => {
+          setModel(false);
+          navigate("/direction");
+        }, 1000);
+      } else {
+        // Show backend error
+        setError(result.error || "Signup failed");
+      }
     } catch (err) {
-       console.error(err.response?.data);
-      setError(err.response?.data?.error || "Signup failed");
+      // Catch any unexpected errors
+      console.error(err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -45,7 +52,7 @@ export default function Signup({ model, setModel, switchToLogin }) {
     <div>
       <button
         onClick={() => setModel(!model)}
-        className="text-white text-sm bg-gradient-to-b from-[#341327] to-[#4F3127] border border-[#fff] px-3 sm:px-7 py-2 rounded-md cursor-pointer duration-300"
+        className="text-white text-sm bg-gradient-to-b from-[#341327] to-[#4F3127] border border-white px-3 sm:px-7 py-2 rounded-md cursor-pointer duration-300"
       >
         Sign Up
       </button>

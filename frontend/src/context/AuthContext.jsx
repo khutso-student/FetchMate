@@ -4,7 +4,9 @@ import { loginUser, signupUser } from "../services/api";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")) || null);
+  const [user, setUser] = useState(
+    JSON.parse(localStorage.getItem("user")) || null
+  );
   const [loading, setLoading] = useState(true);
 
   // Load user from localStorage on first render
@@ -16,28 +18,46 @@ export const AuthProvider = ({ children }) => {
 
   // Login using email + password
   const login = async (email, password) => {
-    const response = await loginUser({ email, password });
-    const { user, tokens } = response.data;
+    try {
+      const response = await loginUser({ email, password });
+      const { user, tokens } = response.data;
 
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("accessToken", tokens.access);
-    localStorage.setItem("refreshToken", tokens.refresh);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("accessToken", tokens.access);
+      localStorage.setItem("refreshToken", tokens.refresh);
 
-    setUser(user);
-    return response.data;
+      setUser(user);
+      return { success: true, data: response.data };
+    } catch (err) {
+      console.error("Login error:", err);
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Login failed";
+      return { success: false, error: message };
+    }
   };
 
   // Signup
   const signup = async (username, email, password) => {
-    const response = await signupUser({ username, email, password });
-    const { user, tokens } = response.data;
+    try {
+      const response = await signupUser({ username, email, password });
+      const { user, tokens } = response.data;
 
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("accessToken", tokens.access);
-    localStorage.setItem("refreshToken", tokens.refresh);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("accessToken", tokens.access);
+      localStorage.setItem("refreshToken", tokens.refresh);
 
-    setUser(user);
-    return response.data;
+      setUser(user);
+      return { success: true, data: response.data };
+    } catch (err) {
+      console.error("Signup error:", err);
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Signup failed";
+      return { success: false, error: message };
+    }
   };
 
   // Logout
