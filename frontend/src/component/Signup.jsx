@@ -16,36 +16,36 @@ export default function Signup({ model, setModel, switchToLogin }) {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setSuccess("");
 
-    try {
-      const result = await signup(username, email, password);
+  try {
+    const result = await signup(username, email, password);
 
-      if (result.success) {
-        setSuccess("Signup successful! Redirecting...");
-        setUsername("");
-        setEmail("");
-        setPassword("");
+    if (result.success) {
+      setSuccess("Signup successful! Redirecting...");
+      setUsername("");
+      setEmail("");
+      setPassword("");
 
-        setTimeout(() => {
-          setModel(false);
-          navigate("/direction");
-        }, 1000);
-      } else {
-        // Show backend error
-        setError(result.error || "Signup failed");
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setModel(false);
+        navigate("/direction");
+      }, 1000);
+    } else {
+      setError(result.error);
     }
-  };
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    setError("Something went wrong. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div>

@@ -1,9 +1,6 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import Logo from "../assets/Logo.svg";
-import { CiLock } from "react-icons/ci";
-import { AiOutlineMail } from "react-icons/ai";
 
 export default function Login({ model, setModel, switchToSignup }) {
   const { login } = useContext(AuthContext);
@@ -22,19 +19,20 @@ export default function Login({ model, setModel, switchToSignup }) {
       const result = await login(email, password);
 
       if (result.success) {
+        setEmail("");
+        setPassword("");
         setModel(false);
         navigate("/direction");
       } else {
-        setError(result.error || "Login failed");
+        setError(result.error);
       }
     } catch (err) {
-      console.error("Unexpected error:", err);
+      console.error("Login error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div>
       <button
