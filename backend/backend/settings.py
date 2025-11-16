@@ -49,6 +49,27 @@ MIDDLEWARE = [
 ]
 
 # ============================================
+# TEMPLATES
+# ============================================
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],  # empty because React handles frontend
+        'APP_DIRS': True,  # needed for admin templates
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',  # required for admin
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+
+
+# ============================================
 # URLS / WSGI
 # ============================================
 ROOT_URLCONF = 'backend.urls'
