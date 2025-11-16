@@ -128,8 +128,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",                   # LOCAL FRONTEND (VITE)
-    "https://fetch-mate-dusky.vercel.app",    # DEPLOYED FRONTEND
+    "http://localhost:5173",
+    "https://fetch-mate-dusky.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -159,6 +159,7 @@ CORS_ALLOW_METHODS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "https://fetch-mate-dusky.vercel.app",
+    "https://fetchmate-4txh.onrender.com",   # <== Added backend domain
 ]
 
 # ============================================
