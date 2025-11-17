@@ -2,12 +2,15 @@ import os
 import tempfile
 import yt_dlp
 import re
+import logging
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.http import FileResponse
 from zipfile import ZipFile
 import shutil
+
+logger = logging.getLogger(__name__)
 
 def sanitize_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "", name)
@@ -21,45 +24,26 @@ def fetch_link(request):
     if not url:
         return Response({"error": "URL is required"}, status=400)
 
-    tmp_dir = tempfile.mkdtemp()  # temporary folder for all downloads
+    tmp_dir = tempfile.mkdtemp()
 
     try:
-        # --------------------------
         # Convert YouTube Music → YouTube
-        # --------------------------
+        original_url = url
         if "music.youtube.com" in url.lower():
             url = url.replace("music.youtube.com", "www.youtube.com")
 
-        is_youtube_music = "www.youtube.com" in url.lower() and "music.youtube.com" in request.data.get("url", "")
+        is_youtube_music = "music.youtube.com" in original_url.lower()
 
-        # --------------------------
         # yt-dlp options
-        # --------------------------
         ydl_opts = {
             "format": "bestaudio/best" if convert_mp3 else "best",
             "outtmpl": os.path.join(tmp_dir, "%(title)s.%(ext)s"),
             "quiet": True,
             "no_warnings": True,
+            "noplaylist": False,
         }
 
-        # Allow playlists
-        ydl_opts["noplaylist"] = False
-
-        # --------------------------
-        # Cookies support
-        # --------------------------
-        cookies_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
-        if os.path.exists(cookies_path):
-            ydl_opts["cookiefile"] = cookies_path
-        else:
-            if "youtube.com" in url.lower() or "music.youtube.com" in url.lower():
-                return Response({
-                    "error": "Protected YouTube content requires cookies. Place cookies.txt in backend root."
-                }, status=400)
-
-        # --------------------------
         # MP3 conversion
-        # --------------------------
         if convert_mp3:
             ydl_opts["postprocessors"] = [{
                 "key": "FFmpegExtractAudio",
@@ -67,16 +51,18 @@ def fetch_link(request):
                 "preferredquality": "192",
             }]
 
-        # --------------------------
+        # Include cookies.txt if exists
+        backend_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
+        cookies_path = os.path.join(backend_root, "cookies.txt")
+        if os.path.exists(cookies_path):
+            ydl_opts["cookiefile"] = cookies_path
+
         # Extract info
-        # --------------------------
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=convert_mp3)
 
-        # --------------------------
-        # Playlist MP3 handling
-        # --------------------------
-        if "entries" in info:  # playlist
+        # Playlist handling
+        if "entries" in info:
             if convert_mp3:
                 zip_path = os.path.join(tmp_dir, "playlist.zip")
                 with ZipFile(zip_path, "w") as zipf:
@@ -85,8 +71,7 @@ def fetch_link(request):
                         file_path = os.path.join(tmp_dir, filename)
                         if os.path.exists(file_path):
                             zipf.write(file_path, arcname=filename)
-                response = FileResponse(open(zip_path, "rb"), as_attachment=True, filename="playlist.zip")
-                return response
+                return FileResponse(open(zip_path, "rb"), as_attachment=True, filename="playlist.zip")
             else:
                 tracks = []
                 for entry in info["entries"]:
@@ -102,20 +87,16 @@ def fetch_link(request):
                     "tracks": tracks
                 })
 
-        # --------------------------
         # Single video/audio
-        # --------------------------
         if convert_mp3:
             filename = sanitize_filename(f"{info['title']}.mp3")
             mp3_file = os.path.join(tmp_dir, filename)
             if not os.path.exists(mp3_file):
                 return Response({"error": "Failed to convert to MP3"}, status=500)
-            response = FileResponse(open(mp3_file, "rb"), as_attachment=True, filename=filename)
-            return response
+            return FileResponse(open(mp3_file, "rb"), as_attachment=True, filename=filename)
 
         raw_formats = info.get("formats", []) or []
 
-        # YouTube Music → audio-only
         if is_youtube_music:
             audio_only = [
                 {
@@ -136,7 +117,6 @@ def fetch_link(request):
                 "formats": audio_only[:3]
             })
 
-        # Normal video + audio
         audio_candidates = [
             {
                 "url": f.get("url"),
@@ -166,11 +146,11 @@ def fetch_link(request):
             "formats": audio_candidates[:2] + video_candidates[:5]
         })
 
+    except yt_dlp.utils.DownloadError as e:
+        logger.warning("YT-DLP download error: %s", e)
+        return Response({"error": "Failed to download the video/audio"}, status=400)
     except Exception as e:
-        return Response({"error": str(e)}, status=400)
-
+        logger.error("Unexpected error in fetch_link: %s", e)
+        return Response({"error": "Failed to process the link"}, status=400)
     finally:
-        # --------------------------
-        # Cleanup temporary folder
-        # --------------------------
         shutil.rmtree(tmp_dir, ignore_errors=True)

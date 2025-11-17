@@ -1,4 +1,4 @@
-// src/context/AuthContext.js
+// src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from "react";
 import api from "../services/api";
 
@@ -22,10 +22,10 @@ export const AuthProvider = ({ children }) => {
         password,
       });
 
-      // Save tokens
-      const { access, refresh } = response.data.tokens;
-      localStorage.setItem("accessToken", access);
-      localStorage.setItem("refreshToken", refresh);
+      // Save tokens (use correct keys from backend)
+      const { accessToken, refreshToken } = response.data.tokens;
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
 
       // Save user
       localStorage.setItem("user", JSON.stringify(response.data.user));
@@ -45,9 +45,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post("/users/login/", { email, password });
 
-      const { access, refresh } = response.data.tokens;
-      localStorage.setItem("accessToken", access);
-      localStorage.setItem("refreshToken", refresh);
+      // Save tokens (use correct keys)
+      const { accessToken, refreshToken } = response.data.tokens;
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
 
       // Save user
       localStorage.setItem("user", JSON.stringify(response.data.user));

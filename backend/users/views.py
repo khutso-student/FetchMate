@@ -11,41 +11,40 @@ def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     refresh["role"] = user.role  # include role in token
     return {
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
+        "refreshToken": str(refresh),
+        "accessToken": str(refresh.access_token),
         "role": user.role,
     }
 
+
+# ======================
+# Signup
+# ======================
 # ======================
 # Signup
 # ======================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
-    data = request.data  # DRF already parses JSON
-    
-    # Optional: log incoming data for debugging
-    print("Signup payload:", data)
+    data = request.data
     
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()
     role = data.get('role', 'user').strip()
 
-    # Validate required fields
+    # Optional: log safe info
+    print(f"Signup attempt for email: {email}")  # ✅ safe, no password
+
     if not username or not email or not password:
         return Response({'error': 'All fields are required.'}, status=400)
-
     if len(password) < 8:
         return Response({'error': 'Password must be at least 8 characters.'}, status=400)
-
     if User.objects.filter(username=username).exists():
         return Response({'error': 'Username already taken.'}, status=400)
-
     if User.objects.filter(email=email).exists():
         return Response({'error': 'Email already registered.'}, status=400)
 
-    # Create user
     user = User.objects.create_user(
         username=username,
         email=email,
@@ -57,13 +56,10 @@ def signup(request):
 
     return Response({
         'message': 'Signup successful',
-        'user': {
-            'username': user.username,
-            'email': user.email,
-            'role': user.role
-        },
+        'user': {'username': user.username, 'email': user.email, 'role': user.role},
         'tokens': tokens
     }, status=201)
+
 
 # ======================
 # Login
@@ -71,10 +67,36 @@ def signup(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
+    data = request.data
+    
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+
+    # Optional: log safe info
+    print(f"Login attempt for email: {email}")  # ✅ safe, no password
+
+    if not email or not password:
+        return Response({'error': 'Both email and password are required.'}, status=400)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid credentials.'}, status=400)
+
+    if not user.check_password(password):
+        return Response({'error': 'Invalid credentials.'}, status=400)
+
+    tokens = get_tokens_for_user(user)
+    return Response({
+        'message': 'Login successful',
+        'user': {'username': user.username, 'email': user.email, 'role': user.role},
+        'tokens': tokens
+    })
+
     data = request.data  # DRF already parses JSON
     
     # Optional: log incoming data for debugging
-    print("Login payload:", data)
+    print(f"Signup attempt for email: {email}")
     
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()

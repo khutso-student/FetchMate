@@ -37,7 +37,7 @@ export default function Direction() {
 
                 <Link to="/dashboard"
                 className='flex justify-center items-center gap-2 text-white mt-5'>
-                    Contiune
+                    Continue
                     <IoIosArrowForward />
                 </Link>
             </div>

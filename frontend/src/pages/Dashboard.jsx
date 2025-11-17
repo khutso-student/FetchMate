@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [meta, setMeta] = useState(null);
   const [selectedFormat, setSelectedFormat] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(""); // NEW: inline error
 
   const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
@@ -28,57 +29,60 @@ export default function Dashboard() {
     navigate("/direction");
   };
 
-  const fetchLink = async (convertMp3 = false) => {
-    if (!url.trim()) return;
+const fetchLink = async (convertMp3 = false) => {
+  if (!url.trim()) return;
 
-    setLoading(true);
-    setMeta(null);
-    setSelectedFormat(null);
+  setLoading(true);
+  setMeta(null);
+  setSelectedFormat(null);
+  setErrorMessage("");
 
-    try {
-      // Axios request with responseType blob to handle file downloads
-      const res = await api.post(
-        "/downloader/fetch/",
-        { url, convert_mp3: convertMp3 },
-        { responseType: "blob" }
-      );
+  try {
+    const res = await api.post(
+      "/downloader/fetch/",
+      { url, convert_mp3: convertMp3 },
+      { responseType: "blob" } // ✅ important for file downloads
+    );
 
-      const contentType = res.headers["content-type"];
-
-      // If backend returns audio directly
-      if (contentType.includes("audio/mpeg")) {
-        const blob = new Blob([res.data], { type: "audio/mpeg" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "audio.mp3";
-        a.click();
-        URL.revokeObjectURL(a.href);
-        setLoading(false);
-        return;
+    // Check if response is a file (Blob)
+    const contentType = res.headers["content-type"];
+    if (contentType && (contentType.includes("audio") || contentType.includes("application/zip"))) {
+      const filename = convertMp3 ? "audio.mp3" : "playlist.zip";
+      const blob = new Blob([res.data], { type: contentType });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } else {
+      // If JSON metadata returned
+      const text = await res.data.text?.(); // sometimes blob has text content
+      const data = text ? JSON.parse(text) : res.data;
+      if (data?.formats) {
+        setMeta(data);
+        if (data.formats.length > 0) setSelectedFormat(data.formats[0]);
+      } else {
+        throw new Error("Unexpected response from server");
       }
-
-      // If backend returns JSON metadata instead of file
-      let data;
-      if (contentType.includes("application/json")) {
-        // Axios with blob requires reading text then parsing
-        const text = await res.data.text?.();
-        data = text ? JSON.parse(text) : null;
-      }
-
-      if (!data) {
-        alert("Failed to fetch link.");
-        setLoading(false);
-        return;
-      }
-
-      setMeta(data);
-      if (data.formats.length > 0) setSelectedFormat(data.formats[0]);
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || "Network error.");
     }
+  } catch (err) {
+    console.error(err);
+
+    // Axios error handling
+    const serverMessage =
+      err.response?.data instanceof Blob
+        ? await err.response.data.text()
+        : err.response?.data?.error;
+
+    if (serverMessage?.includes("cookies")) {
+      setErrorMessage("Protected YouTube content requires valid cookies.txt in backend root.");
+    } else {
+      setErrorMessage(serverMessage || err.message || "Network error.");
+    }
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
   return (
     <div
@@ -161,6 +165,11 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* INLINE ERROR MESSAGE */}
+        {errorMessage && (
+          <p className="text-red-400 text-sm mt-1">{errorMessage}</p>
+        )}
+
         {/* BRAND UI */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -233,18 +242,39 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {selectedFormat && (
-              <a
-                href={selectedFormat.url}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-block px-4 py-2 bg-gradient-to-b 
-                from-[#341327d2] to-[#4f3127c9] border border-white rounded-md"
-              >
-                Download
-              </a>
-            )}
+          {selectedFormat && (
+            <button
+              onClick={async () => {
+                if (!selectedFormat.url) return;
+
+                try {
+                  setLoading(true);
+                  const res = await api.get(selectedFormat.url, { responseType: "blob" });
+                  const blob = new Blob([res.data], { type: res.headers["content-type"] });
+                  const a = document.createElement("a");
+
+                  // Generate filename
+                  let filename = selectedFormat.ext ? `${meta.title}.${selectedFormat.ext}` : "download";
+                  filename = filename.replace(/[\\/*?:"<>|]/g, ""); // sanitize
+
+                  a.href = URL.createObjectURL(blob);
+                  a.download = filename;
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                } catch (err) {
+                  console.error(err);
+                  setErrorMessage("Failed to download file.");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="mt-3 inline-block px-4 py-2 bg-gradient-to-b 
+              from-[#341327d2] to-[#4f3127c9] border border-white rounded-md"
+            >
+              Download
+            </button>
+          )}
+
           </motion.div>
         )}
 
