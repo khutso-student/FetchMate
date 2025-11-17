@@ -27,14 +27,12 @@ def fetch_link(request):
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        # Convert YouTube Music → YouTube
         original_url = url
         if "music.youtube.com" in url.lower():
             url = url.replace("music.youtube.com", "www.youtube.com")
 
         is_youtube_music = "music.youtube.com" in original_url.lower()
 
-        # yt-dlp options
         ydl_opts = {
             "format": "bestaudio/best" if convert_mp3 else "best",
             "outtmpl": os.path.join(tmp_dir, "%(title)s.%(ext)s"),
@@ -43,7 +41,6 @@ def fetch_link(request):
             "noplaylist": False,
         }
 
-        # MP3 conversion
         if convert_mp3:
             ydl_opts["postprocessors"] = [{
                 "key": "FFmpegExtractAudio",
@@ -51,13 +48,14 @@ def fetch_link(request):
                 "preferredquality": "192",
             }]
 
-        # Include cookies.txt if exists
+        # ✅ Check for cookies.txt and only include if exists
         backend_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
         cookies_path = os.path.join(backend_root, "cookies.txt")
         if os.path.exists(cookies_path):
             ydl_opts["cookiefile"] = cookies_path
+        else:
+            logger.info("No cookies.txt found, will only download public videos.")
 
-        # Extract info
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=convert_mp3)
 
@@ -73,14 +71,12 @@ def fetch_link(request):
                             zipf.write(file_path, arcname=filename)
                 return FileResponse(open(zip_path, "rb"), as_attachment=True, filename="playlist.zip")
             else:
-                tracks = []
-                for entry in info["entries"]:
-                    tracks.append({
-                        "title": entry.get("title"),
-                        "uploader": entry.get("uploader"),
-                        "thumbnail": entry.get("thumbnail"),
-                        "formats": entry.get("formats", [])
-                    })
+                tracks = [{
+                    "title": e.get("title"),
+                    "uploader": e.get("uploader"),
+                    "thumbnail": e.get("thumbnail"),
+                    "formats": e.get("formats", [])
+                } for e in info["entries"]]
                 return Response({
                     "playlist_title": info.get("title"),
                     "uploader": info.get("uploader"),
@@ -92,13 +88,13 @@ def fetch_link(request):
             filename = sanitize_filename(f"{info['title']}.mp3")
             mp3_file = os.path.join(tmp_dir, filename)
             if not os.path.exists(mp3_file):
-                return Response({"error": "Failed to convert to MP3"}, status=500)
+                return Response({"error": "Failed to convert to MP3. This may require login/cookies."}, status=400)
             return FileResponse(open(mp3_file, "rb"), as_attachment=True, filename=filename)
 
         raw_formats = info.get("formats", []) or []
 
         if is_youtube_music:
-            audio_only = [
+            audio_only = sorted([
                 {
                     "url": f.get("url"),
                     "ext": "m4a",
@@ -107,8 +103,7 @@ def fetch_link(request):
                     "size": f.get("filesize") or f.get("filesize_approx"),
                     "resolution": None,
                 } for f in raw_formats if f.get("acodec") != "none" and f.get("vcodec") == "none"
-            ]
-            audio_only = sorted(audio_only, key=lambda x: -(x.get("bitrate") or 0))
+            ], key=lambda x: -(x.get("bitrate") or 0))
             return Response({
                 "title": info.get("title"),
                 "thumbnail": info.get("thumbnail"),
@@ -147,10 +142,17 @@ def fetch_link(request):
         })
 
     except yt_dlp.utils.DownloadError as e:
+        msg = str(e)
+        if "Sign in to confirm" in msg:
+            return Response({
+                "error": "This video requires login/cookies. Only public videos are downloadable."
+            }, status=400)
         logger.warning("YT-DLP download error: %s", e)
         return Response({"error": "Failed to download the video/audio"}, status=400)
+
     except Exception as e:
         logger.error("Unexpected error in fetch_link: %s", e)
         return Response({"error": "Failed to process the link"}, status=400)
+
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)

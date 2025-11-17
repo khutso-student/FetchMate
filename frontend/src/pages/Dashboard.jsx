@@ -68,14 +68,20 @@ const fetchLink = async (convertMp3 = false) => {
   } catch (err) {
     console.error(err);
 
-    // Axios error handling
-    const serverMessage =
-      err.response?.data instanceof Blob
-        ? await err.response.data.text()
-        : err.response?.data?.error;
+    let serverMessage = "";
+    if (err.response?.data instanceof Blob) {
+      try {
+        const text = await err.response.data.text();
+        serverMessage = text;
+      } catch {}
+    } else {
+      serverMessage = err.response?.data?.error;
+    }
 
-    if (serverMessage?.includes("cookies")) {
-      setErrorMessage("Protected YouTube content requires valid cookies.txt in backend root.");
+    if (serverMessage?.includes("cookies") || serverMessage?.includes("login")) {
+      setErrorMessage(
+        "⚠️ This content requires login. Please ensure a valid cookies.txt is in the backend root."
+      );
     } else {
       setErrorMessage(serverMessage || err.message || "Network error.");
     }
@@ -83,6 +89,7 @@ const fetchLink = async (convertMp3 = false) => {
     setLoading(false);
   }
 };
+
 
   return (
     <div
